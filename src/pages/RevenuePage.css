@@ -1,0 +1,209 @@
+.revenue-hero {
+  background-image: url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80');
+  padding: 8rem 1.5rem;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: var(--white);
+  margin-top: calc(var(--nav-height) * -1);
+  padding-top: calc(var(--nav-height) + 6rem);
+}
+
+.revenue-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.revenue-card {
+  background: var(--white);
+  padding: 2.5rem 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  text-align: center;
+  transition: var(--transition);
+  position: relative;
+}
+
+.revenue-card:hover {
+  transform: translateY(-5px);
+}
+
+.revenue-card-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: var(--white);
+  margin: 0 auto 1.5rem;
+}
+
+.revenue-card h3 {
+  margin-bottom: 1rem;
+}
+
+.revenue-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.revenue-badge {
+  display: inline-block;
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Pricing Section */
+.pricing-section {
+  background: var(--bg-color);
+}
+
+.pricing-toggle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.active-text { color: var(--primary); }
+
+.pricing-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.pricing-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pricing-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--primary-light);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.pricing-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .pricing-slider {
+  background-color: var(--secondary);
+}
+
+input:checked + .pricing-slider:before {
+  transform: translateX(26px);
+}
+
+.discount-badge {
+  background: var(--success);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pricing-card {
+  background: var(--white);
+  padding: 3rem 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  text-align: center;
+  position: relative;
+}
+
+.pricing-card.popular {
+  transform: scale(1.05);
+  border: 2px solid var(--secondary);
+}
+
+.popular-badge {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--secondary);
+  color: var(--primary);
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.plan-name {
+  font-size: 1.5rem;
+  font-family: var(--font-heading);
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.plan-price {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.plan-price span {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.plan-desc {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.plan-features {
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.plan-features li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plan-features i.fa-check { color: var(--success); }
+.plan-features i.fa-times { color: #cbd5e1; }
+.plan-features li.disabled { color: #94a3b8; }
