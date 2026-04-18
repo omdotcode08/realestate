@@ -1,122 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { revenueSimulatorFormula } from '../data/mockData';
+import React, { useState } from 'react';
 import KPICard from '../components/shared/KPICard';
 import Button from '../components/shared/Button';
 import Badge from '../components/shared/Badge';
-import { Check, X, TrendingUp, Users, Target, Activity } from 'lucide-react';
-
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-} from 'chart.js';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+import Modal from '../components/shared/Modal';
+import DataTable from '../components/shared/DataTable';
+import { Check, X, TrendingUp, Users, Activity, DollarSign, Plus, FileText, Receipt } from 'lucide-react';
 
 export default function RevenueModel() {
-  // --- Simulator State ---
-  const [agents, setAgents] = useState(5000);
-  const [proPct, setProPct] = useState(25);
-  const [featuredAvg, setFeaturedAvg] = useState(5);
-  const [kpis, setKpis] = useState({ arr: '0', growth: '0', monthlyRevenue: 0, leadsGenerated: 0 });
+  // --- Live Transaction State ---
+  const [transactions, setTransactions] = useState([
+    { id: 'tx1', amount: 150000, source: 'Subscription Plans', note: 'Enterprise Annual Signup', date: new Date().toISOString().split('T')[0] },
+    { id: 'tx2', amount: 25000, source: 'Featured Listings', note: 'Top Banner Ads Placements', date: new Date().toISOString().split('T')[0] },
+  ]);
+  const [showTxModal, setShowTxModal] = useState(false);
+  const [txForm, setTxForm] = useState({ amount: '', source: 'Subscription Plans', note: '' });
 
-  // Update KPIs and chart data on slider change
-  useEffect(() => {
-    const result = revenueSimulatorFormula(agents, proPct, featuredAvg);
-    setKpis(result);
-  }, [agents, proPct, featuredAvg]);
+  // --- Invoicing State ---
+  const [invoices, setInvoices] = useState([
+    { id: 'INV-2026-001', client: 'Arun Properties', amount: 12000, status: 'Paid', due: '2026-04-10' },
+    { id: 'INV-2026-002', client: 'Dream Homes Agency', amount: 45000, status: 'Pending', due: '2026-04-20' },
+    { id: 'INV-2026-003', client: 'Skyline Builders', amount: 18000, status: 'Overdue', due: '2026-04-05' },
+  ]);
 
-  // --- Chart Data ---
-  const doughnutData = {
-    labels: ['Subscription Plans', 'Featured Listings', 'Lead Generation', 'Home Loans', 'Legal Services', 'Interior Referrals'],
-    datasets: [{
-      data: [30, 20, 25, 15, 7, 3],
-      backgroundColor: [
-        '#0F172A', // navy-900
-        '#F59E0B', // gold-500
-        '#3b82f6', // blue-500
-        '#10b981', // emerald-500
-        '#8b5cf6', // violet-500
-        '#f43f5e', // rose-500
-      ],
-      borderWidth: 0,
-      hoverOffset: 4
-    }]
+  const totalActualRevenue = transactions.reduce((acc, tx) => acc + Number(tx.amount), 0);
+  const activeSubs = 450;
+  const mrr = 1250000;
+  const outstandingAmount = invoices.filter(i => i.status !== 'Paid').reduce((acc, i) => acc + i.amount, 0);
+
+  const handleTxSubmit = (e) => {
+    e.preventDefault();
+    if (!txForm.amount) return;
+    const newTx = {
+      id: `tx${Date.now()}`,
+      amount: Number(txForm.amount),
+      source: txForm.source,
+      note: txForm.note,
+      date: new Date().toISOString().split('T')[0]
+    };
+    setTransactions([newTx, ...transactions]);
+    setShowTxModal(false);
+    setTxForm({ amount: '', source: 'Subscription Plans', note: '' });
   };
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  // Make bar chart dynamic based on simulated monthly revenue
-  const dynamicBarData = months.map((_, i) => {
-    const base = kpis.monthlyRevenue || 50000000;
-    // Add some random seasonal fluctuation -10% to +10%
-    const variation = 0.9 + (Math.sin(i) * 0.1); 
-    return base * variation;
-  });
-
-  const barData = {
-    labels: months,
-    datasets: [{
-      label: 'Monthly Revenue (₹)',
-      data: dynamicBarData,
-      backgroundColor: '#0F172A',
-      borderRadius: 4,
-    }]
-  };
-
-  const lineData = {
-    labels: months,
-    datasets: [
-      {
-        label: 'Listings Growth',
-        data: months.map((_, i) => 1000 + (agents * 0.1 * i)),
-        borderColor: '#0F172A',
-        backgroundColor: 'transparent',
-        tension: 0.4,
-        yAxisID: 'y'
-      },
-      {
-        label: 'Revenue Growth',
-        data: dynamicBarData.map(v => v / 1000000), // Scale to millions for visual balance
-        borderColor: '#F59E0B',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        fill: true,
-        tension: 0.4,
-        yAxisID: 'y1'
-      }
-    ]
-  };
-
-  const lineOptions = {
-    responsive: true,
-    interaction: { mode: 'index', intersect: false },
-    scales: {
-      y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Listings Count' } },
-      y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Rev (Millions)' } }
+  const txColumns = [
+    { label: 'Date', key: 'date', sortable: true },
+    { label: 'Source', key: 'source', sortable: true },
+    { label: 'Notes', key: 'note' },
+    { 
+      label: 'Amount (₹)', 
+      key: 'amount', 
+      sortable: true,
+      render: (row) => `₹${Number(row.amount).toLocaleString()}`
     }
-  };
+  ];
 
-  // --- Subscription TIer State ---
+  const invoiceColumns = [
+    { label: 'Invoice #', key: 'id' },
+    { label: 'Client', key: 'client', sortable: true },
+    { label: 'Due Date', key: 'due', sortable: true },
+    { 
+      label: 'Amount (₹)', 
+      key: 'amount', 
+      sortable: true,
+      render: (row) => `₹${row.amount.toLocaleString()}`
+    },
+    { 
+      label: 'Status', 
+      key: 'status',
+      render: (row) => (
+        <Badge variant={row.status === 'Paid' ? 'success' : row.status === 'Pending' ? 'warning' : 'danger'}>
+          {row.status}
+        </Badge>
+      )
+    }
+  ];
+
+  // --- Subscription Tier State ---
   const [selectedPlan, setSelectedPlan] = useState('Pro');
   
   const plans = [
@@ -143,140 +102,156 @@ export default function RevenueModel() {
       <div className="container mx-auto px-4">
         
         <div className="mb-10 text-center">
-          <Badge variant="gold" className="uppercase tracking-widest mb-3">Admin Analytics</Badge>
-          <h1 className="text-4xl font-bold text-navy-900 mb-4">Revenue Model & Dashboard</h1>
-          <p className="text-slate-500 max-w-2xl mx-auto">Track real-time growth, adjust monetization levers, and monitor financial performance of the platform.</p>
+          <Badge variant="gold" className="uppercase tracking-widest mb-3">Finance Center</Badge>
+          <h1 className="text-4xl font-bold text-navy-900 mb-4">Billing & Transactions System</h1>
+          <p className="text-slate-500 max-w-2xl mx-auto">Manage invoices, record incoming payments, and oversee subscription plans directly from the localized system state.</p>
         </div>
 
         {/* Dashboard KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <KPICard title="Total ARR" value={kpis.arr} icon={Activity} change={12.4} />
-          <KPICard title="MoM Revenue Growth" value={kpis.growth} icon={TrendingUp} change={2.1} />
-          <KPICard title="Active Agent Subscriptions" value={agents.toLocaleString()} icon={Users} change={5.8} />
-          <KPICard title="Leads Generated (Month)" value={kpis.leadsGenerated.toLocaleString()} icon={Target} change={18.2} />
+          <KPICard title="Total Collected Balance" value={`₹${totalActualRevenue.toLocaleString()}`} icon={DollarSign} change={8.5} />
+          <KPICard title="Current MRR" value={`₹${(mrr / 100000).toFixed(1)}L`} icon={TrendingUp} change={4.2} />
+          <KPICard title="Active Subscribers" value={activeSubs.toLocaleString()} icon={Users} change={2.1} />
+          <KPICard title="Outstanding Invoices" value={`₹${outstandingAmount.toLocaleString()}`} icon={FileText} change={-5.4} />
         </div>
 
-        {/* Simulator Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          
-          {/* Controls */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h3 className="text-xl font-bold text-navy-900 mb-6 flex items-center gap-2">
-              Revenue Simulator
-            </h3>
-            
-            <div className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-16">
+          {/* Outstanding Bills / Invoices */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-navy-900 text-white">
               <div>
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">Active Agents</label>
-                  <span className="font-bold text-navy-900">{agents.toLocaleString()}</span>
-                </div>
-                <input 
-                  type="range" min="100" max="10000" step="100"
-                  value={agents} onChange={(e) => setAgents(Number(e.target.value))}
-                  className="w-full accent-gold-500 bg-slate-200 rounded-lg h-2"
-                />
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-gold-500" /> System Invoices
+                </h3>
               </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">% on Pro/Premium Plan</label>
-                  <span className="font-bold text-navy-900">{proPct}%</span>
-                </div>
-                <input 
-                  type="range" min="5" max="70" step="1"
-                  value={proPct} onChange={(e) => setProPct(Number(e.target.value))}
-                  className="w-full accent-gold-500 bg-slate-200 rounded-lg h-2"
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">Avg Featured Listings / Agent</label>
-                  <span className="font-bold text-navy-900">{featuredAvg} / mo</span>
-                </div>
-                <input 
-                  type="range" min="1" max="20" step="1"
-                  value={featuredAvg} onChange={(e) => setFeaturedAvg(Number(e.target.value))}
-                  className="w-full accent-gold-500 bg-slate-200 rounded-lg h-2"
-                />
-              </div>
+              <Button variant="outline" className="text-sm py-1.5 px-3 border-white text-white hover:bg-white hover:text-navy-900">Generate Invoice</Button>
             </div>
-            
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <p className="text-sm text-slate-500 mb-2">Projected Monthly Revenue</p>
-              <h2 className="text-3xl font-bold text-emerald-600">₹{(kpis.monthlyRevenue / 1000000).toFixed(2)} M</h2>
+            <div className="flex-1 p-4 bg-white">
+              <DataTable 
+                columns={invoiceColumns}
+                data={invoices}
+                searchKey="client"
+                searchPlaceholder="Search invoices..."
+              />
             </div>
           </div>
 
-          {/* Charts */}
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h3 className="text-sm font-bold text-slate-600 mb-4">Revenue by Stream</h3>
-              <div className="h-64 flex justify-center">
-                <Doughnut data={doughnutData} options={{ maintainAspectRatio: false }} />
+          {/* Transaction Ledger */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="text-xl font-bold text-navy-900 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-500" /> Incoming Ledger
+                </h3>
               </div>
+              <Button variant="primary" className="text-sm py-1.5 px-3" onClick={() => setShowTxModal(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Add Record
+              </Button>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h3 className="text-sm font-bold text-slate-600 mb-4">Monthly Revenue Projection</h3>
-              <div className="h-64">
-                <Bar data={barData} options={{ maintainAspectRatio: false }} />
-              </div>
-            </div>
-            <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h3 className="text-sm font-bold text-slate-600 mb-4">Listings Growth vs Revenue</h3>
-              <div className="h-72">
-                <Line data={lineData} options={lineOptions} />
-              </div>
+            <div className="flex-1 p-4 bg-white">
+              <DataTable 
+                columns={txColumns}
+                data={transactions}
+                searchKey="source"
+                searchPlaceholder="Search ledgers..."
+              />
             </div>
           </div>
-          
         </div>
+
+        {/* Record Transaction Modal */}
+        <Modal isOpen={showTxModal} onClose={() => setShowTxModal(false)} title="Record New Transaction">
+          <form onSubmit={handleTxSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Amount (₹)</label>
+              <input 
+                type="number" 
+                required
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                value={txForm.amount}
+                onChange={(e) => setTxForm({...txForm, amount: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Income Source</label>
+              <select
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                value={txForm.source}
+                onChange={(e) => setTxForm({...txForm, source: e.target.value})}
+              >
+                <option value="Subscription Plans">Subscription Plans</option>
+                <option value="Featured Listings">Featured Listings</option>
+                <option value="Lead Generation">Lead Generation</option>
+                <option value="Home Loans">Home Loans</option>
+                <option value="Legal Services">Legal Services</option>
+                <option value="Interior Referrals">Interior Referrals</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Reference Notes (Optional)</label>
+              <input 
+                type="text" 
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                value={txForm.note}
+                onChange={(e) => setTxForm({...txForm, note: e.target.value})}
+                placeholder="e.g. Enterprise Annual Payment"
+              />
+            </div>
+            <div className="pt-4 flex gap-4">
+              <Button variant="ghost" type="button" onClick={() => setShowTxModal(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button variant="primary" type="submit" className="flex-1">
+                Save Record
+              </Button>
+            </div>
+          </form>
+        </Modal>
 
         {/* Subscription Tier Comparison */}
-        <div className="mt-20">
+        <div className="mt-12">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-navy-900 mb-4">Subscription Tiers</h2>
-            <p className="text-slate-500">Pick the plan that works best for your agency or builder portfolio.</p>
+            <h2 className="text-3xl font-bold text-navy-900 mb-4">Manage Subscription Tiers</h2>
+            <p className="text-slate-500">Configure the pricing plans currently offered in the system.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan) => (
-              <div 
-                key={plan.name}
-                onClick={() => setSelectedPlan(plan.name)}
-                className={`relative bg-white rounded-2xl p-8 border-2 transition-all cursor-pointer overflow-hidden ${
-                  selectedPlan === plan.name ? 'border-gold-500 shadow-xl scale-105' : 'border-slate-200 hover:border-slate-300 shadow-sm'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-gold-500 text-navy-900 text-xs font-bold px-3 py-1 rounded-bl-lg">
-                    MOST POPULAR
-                  </div>
-                )}
-                <h3 className="text-xl font-bold text-navy-900 mb-2">{plan.name}</h3>
-                <div className="text-3xl font-bold text-slate-800 mb-6">{plan.price}</div>
-                
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-3 text-sm text-slate-600">
-                      {feature.includes('No') ? <X className="w-5 h-5 text-red-400" /> : <Check className="w-5 h-5 text-emerald-500" />}
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                
-                <Button 
-                  variant={selectedPlan === plan.name ? 'primary' : 'outline'} 
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    alert(`${plan.name} Selected`);
-                  }}
-                >
-                  Choose {plan.name}
-                </Button>
-              </div>
+               <div 
+                 key={plan.name}
+                 onClick={() => setSelectedPlan(plan.name)}
+                 className={`relative bg-white rounded-2xl p-8 border-2 transition-all cursor-pointer overflow-hidden ${
+                   selectedPlan === plan.name ? 'border-gold-500 shadow-xl scale-105' : 'border-slate-200 hover:border-slate-300 shadow-sm'
+                 }`}
+               >
+                 {plan.popular && (
+                   <div className="absolute top-0 right-0 bg-gold-500 text-navy-900 text-xs font-bold px-3 py-1 rounded-bl-lg">
+                     MOST POPULAR
+                   </div>
+                 )}
+                 <h3 className="text-xl font-bold text-navy-900 mb-2">{plan.name}</h3>
+                 <div className="text-3xl font-bold text-slate-800 mb-6">{plan.price}</div>
+                 
+                 <ul className="space-y-4 mb-8">
+                   {plan.features.map((feature, idx) => (
+                     <li key={idx} className="flex items-center gap-3 text-sm text-slate-600">
+                       {feature.includes('No') ? <X className="w-5 h-5 text-red-400" /> : <Check className="w-5 h-5 text-emerald-500" />}
+                       {feature}
+                     </li>
+                   ))}
+                 </ul>
+                 
+                 <Button 
+                   variant={selectedPlan === plan.name ? 'primary' : 'outline'} 
+                   className="w-full"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     alert(`Manage ${plan.name} Plan limits`);
+                   }}
+                 >
+                   Manage {plan.name}
+                 </Button>
+               </div>
             ))}
           </div>
         </div>

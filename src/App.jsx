@@ -6,6 +6,9 @@ import RevenueModel from './pages/RevenueModel';
 import MarketingStrategy from './pages/MarketingStrategy';
 import CRM from './pages/CRM';
 import Security from './pages/Security';
+import ListPropertyPage from './pages/ListPropertyPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -27,6 +30,9 @@ function App() {
         <Route path="/marketing" element={<MarketingStrategy />} />
         <Route path="/crm" element={<CRM />} />
         <Route path="/security" element={<Security />} />
+        <Route path="/list" element={<ListPropertyPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
       </Routes>
     </BrowserRouter>
   );

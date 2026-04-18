@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { mockKanbanData, mockVisits, mockTickets, mockProperties, mockAgents } from '../data/mockData';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { LayoutDashboard, Users, Columns, Calendar, LifeBuoy, Plus, Phone, CalendarPlus, Search, CheckCircle, X, ChevronRight, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, Columns, Calendar, LifeBuoy, Plus, Phone, CalendarPlus, Search, CheckCircle, X, ChevronRight, UserPlus, Info, Shield, Award, FileText } from 'lucide-react';
 import Badge from '../components/shared/Badge';
 import Button from '../components/shared/Button';
 import Toast from '../components/shared/Toast';
 import Modal from '../components/shared/Modal';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 export default function CRM() {
-  const [activeView, setActiveView] = useState('Pipeline'); // Dashboard, Pipeline, Scheduled Visits, Support
+  const [activeView, setActiveView] = useState('Pipeline'); // Dashboard, Pipeline, Scheduled Visits, Support, About Us
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const [toastMessage, setToastMessage] = useState(null);
@@ -21,6 +24,13 @@ export default function CRM() {
   // --- Lead Detail Panel ---
   const [selectedLead, setSelectedLead] = useState(null);
   const [leadNotes, setLeadNotes] = useLocalStorage('crm_lead_notes', {});
+
+  // --- CRM Shared State ---
+  const [crmVisits, setCrmVisits] = useLocalStorage('crm_visits', mockVisits);
+  const [crmTickets, setCrmTickets] = useLocalStorage('crm_tickets', mockTickets);
+
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState({ date: '', time: '10:00 AM', property: 'To be decided' });
 
   // --- Calendar State ---
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -86,6 +96,7 @@ export default function CRM() {
           <NavItem icon={Columns} label="Pipeline" />
           <NavItem icon={Calendar} label="Scheduled Visits" />
           <NavItem icon={LifeBuoy} label="Support" />
+          <NavItem icon={Info} label="About Us" />
         </nav>
       </aside>
 
@@ -160,10 +171,12 @@ export default function CRM() {
           )}
 
           {activeView === 'Scheduled Visits' && (
-            <ScheduledVisitsView currentDate={currentDate} setCurrentDate={setCurrentDate} />
+            <ScheduledVisitsView currentDate={currentDate} setCurrentDate={setCurrentDate} visits={crmVisits} setVisits={setCrmVisits} />
           )}
 
-          {activeView === 'Support' && <SupportView />}
+          {activeView === 'Support' && <SupportView tickets={crmTickets} setTickets={setCrmTickets} />}
+
+          {activeView === 'About Us' && <AboutUsView />}
 
         </div>
       </main>
@@ -196,7 +209,7 @@ export default function CRM() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 px-0" onClick={() => setToastMessage("Scheduling modal opened.")}>
+                <Button variant="outline" className="flex-1 px-0" onClick={() => setIsScheduleModalOpen(true)}>
                   <CalendarPlus className="w-4 h-4 mr-2" /> Schedule
                 </Button>
                 <Button variant="outline" className="flex-1 px-0 border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white">
@@ -265,6 +278,48 @@ export default function CRM() {
           </div>
         )}
       </div>
+
+      <Modal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} title={`Book Visit for ${selectedLead?.name}`}>
+        <form onSubmit={(e) => {
+           e.preventDefault();
+           if (!scheduleForm.date) return;
+           const newVisit = { buyer: selectedLead?.name, property: scheduleForm.property, agent: selectedLead?.agent, dateStr: scheduleForm.date, time: scheduleForm.time, status: 'Pending' };
+           setCrmVisits([...crmVisits, newVisit]);
+           
+           const d = new Date(scheduleForm.date);
+           const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+           const gcalUrl = `https://calendar.google.com/calendar/r/eventedit?text=Property+Visit+-+${encodeURIComponent(selectedLead?.name || '')}&dates=${dateStr}T100000Z/${dateStr}T110000Z&details=${encodeURIComponent('Meeting with lead ' + selectedLead?.name)}&location=${encodeURIComponent(scheduleForm.property)}`;
+           window.open(gcalUrl, '_blank');
+           
+           setToastMessage("Visit Scheduled & Added to Google Calendar!");
+           setIsScheduleModalOpen(false);
+           setScheduleForm({ date: '', time: '10:00 AM', property: 'To be decided' });
+        }} className="space-y-4">
+           <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Property of Interest</label>
+              <input type="text" required className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={scheduleForm.property} onChange={e => setScheduleForm({...scheduleForm, property: e.target.value})} />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                 <input type="date" required className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={scheduleForm.date} onChange={e => setScheduleForm({...scheduleForm, date: e.target.value})} />
+              </div>
+              <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">Time</label>
+                 <select className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={scheduleForm.time} onChange={e => setScheduleForm({...scheduleForm, time: e.target.value})}>
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="12:00 PM">12:00 PM</option>
+                    <option value="02:00 PM">02:00 PM</option>
+                    <option value="04:00 PM">04:00 PM</option>
+                 </select>
+              </div>
+           </div>
+           <div className="pt-4 flex gap-4">
+              <Button variant="ghost" type="button" onClick={() => setIsScheduleModalOpen(false)} className="flex-1">Cancel</Button>
+              <Button variant="primary" type="submit" className="flex-1">Schedule & Sync Calendar</Button>
+           </div>
+        </form>
+      </Modal>
       
     </div>
   );
@@ -313,7 +368,7 @@ function DashboardView() {
   );
 }
 
-function ScheduledVisitsView({ currentDate, setCurrentDate }) {
+function ScheduledVisitsView({ currentDate, setCurrentDate, visits, setVisits }) {
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
@@ -332,7 +387,7 @@ function ScheduledVisitsView({ currentDate, setCurrentDate }) {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
 
   // Dummy filter
-  const dayVisits = mockVisits.filter(v => {
+  const dayVisits = visits.filter(v => {
     const d = new Date(v.dateStr);
     return d.getDate() === selectedDate && d.getMonth() === month && d.getFullYear() === year;
   });
@@ -355,7 +410,7 @@ function ScheduledVisitsView({ currentDate, setCurrentDate }) {
           </div>
           <div className="grid grid-cols-7 h-96">
             {days.map((day, i) => {
-              const hasVisit = day && mockVisits.some(v => new Date(v.dateStr).getDate() === day && new Date(v.dateStr).getMonth() === month);
+              const hasVisit = day && visits.some(v => new Date(v.dateStr).getDate() === day && new Date(v.dateStr).getMonth() === month);
               return (
                 <div 
                   key={i} 
@@ -409,8 +464,26 @@ function ScheduledVisitsView({ currentDate, setCurrentDate }) {
   );
 }
 
-function SupportView() {
-  const [tickets, setTickets] = useState(mockTickets);
+function SupportView({ tickets, setTickets }) {
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ issue: '', client: '', priority: 'Medium' });
+
+  const handleCreateTicket = (e) => {
+    e.preventDefault();
+    if(!ticketForm.issue || !ticketForm.client) return;
+    
+    const newTicket = {
+      id: `T${1000 + tickets.length + 1}`,
+      issue: ticketForm.issue,
+      client: ticketForm.client,
+      priority: ticketForm.priority,
+      status: 'Open'
+    };
+    
+    setTickets([newTicket, ...tickets]);
+    setIsTicketModalOpen(false);
+    setTicketForm({ issue: '', client: '', priority: 'Medium' });
+  };
 
   return (
     <div>
@@ -419,9 +492,36 @@ function SupportView() {
           <h1 className="text-2xl font-bold text-navy-900">Support Desk</h1>
           <p className="text-slate-500">Manage client queries and issues.</p>
         </div>
-        <Button variant="primary">Create Ticket</Button>
+        <Button variant="primary" onClick={() => setIsTicketModalOpen(true)}>Create Ticket</Button>
       </div>
 
+      {/* Ticket Modal */}
+      <Modal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} title="Log New Issue Ticket">
+        <form onSubmit={handleCreateTicket} className="space-y-4">
+           <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Client Name</label>
+              <input type="text" required className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={ticketForm.client} onChange={e => setTicketForm({...ticketForm, client: e.target.value})} />
+           </div>
+           <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Issue Description</label>
+              <textarea required rows="3" className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={ticketForm.issue} onChange={e => setTicketForm({...ticketForm, issue: e.target.value})}></textarea>
+           </div>
+           <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Priority Level</label>
+              <select className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500" value={ticketForm.priority} onChange={e => setTicketForm({...ticketForm, priority: e.target.value})}>
+                 <option value="Low">Low</option>
+                 <option value="Medium">Medium</option>
+                 <option value="High">High</option>
+              </select>
+           </div>
+           <div className="pt-4 flex gap-4">
+              <Button variant="ghost" type="button" onClick={() => setIsTicketModalOpen(false)} className="flex-1">Cancel</Button>
+              <Button variant="primary" type="submit" className="flex-1">Publish Ticket</Button>
+           </div>
+        </form>
+      </Modal>
+
+      {/* ... previous table code ... */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
          <table className="w-full text-left">
            <thead className="bg-slate-50 border-b border-slate-200">
@@ -466,4 +566,88 @@ function SupportView() {
       </div>
     </div>
   );
+}
+
+function AboutUsView() {
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-navy-900 mb-2">About The Company</h1>
+        <p className="text-slate-500">Trust, Transparency, and Excellence in Real Estate</p>
+      </div>
+
+      <div className="space-y-8">
+        {/* Company Overview */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex gap-6 items-start">
+          <div className="p-4 bg-navy-50 text-navy-900 rounded-xl">
+             <Info className="w-8 h-8 font-bold" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-navy-900 mb-3">Our Mission</h3>
+            <p className="text-slate-700 leading-relaxed">
+              We empower buyers, renters, and agents to navigate the dynamic real estate landscape through cutting-edge technology and verified data. Under stringent RERA compliance, we provide an ecosystem that favors transparency, accelerates deal closures, and delivers high-tier client satisfaction across India's metropolitan hubs.
+            </p>
+          </div>
+        </div>
+
+        {/* Legal Licenses */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex gap-6 items-start">
+          <div className="p-4 bg-gold-50 text-gold-600 rounded-xl">
+             <Shield className="w-8 h-8 font-bold" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-navy-900 mb-3">Legal & Operational Licenses</h3>
+            <div className="space-y-4 text-sm text-slate-700">
+               <div className="flex justify-between border-b pb-2">
+                 <span className="font-semibold tracking-wider">RERA Registration No:</span>
+                 <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">RERA/KA/PR/180215/000109</span>
+               </div>
+               <div className="flex justify-between border-b pb-2">
+                 <span className="font-semibold tracking-wider">CIN (Corporate Identity):</span>
+                 <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">U70102KA2026PTC145028</span>
+               </div>
+               <div className="flex justify-between border-b pb-2">
+                 <span className="font-semibold tracking-wider">GSTIN:</span>
+                 <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">29ABCDE1234F1Z5</span>
+               </div>
+               <div className="flex justify-between border-b pb-2">
+                 <span className="font-semibold tracking-wider">ISO Certification:</span>
+                 <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">ISO 9001:2015 (QMS)</span>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Compliance Papers */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex gap-6 items-start">
+          <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl">
+             <FileText className="w-8 h-8 font-bold" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xl font-bold text-navy-900 mb-3">Compliance & Corporate Papers</h3>
+            <p className="text-slate-500 mb-4 text-sm">Downloadable digitized records of our statutory compliance documents.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <a href="#" className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <FileText className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-sm">Incorporation Certificate .pdf</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <FileText className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-sm">RERA Master License .pdf</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <FileText className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-sm">Audited Financials FY25 .pdf</span>
+              </a>
+              <a href="#" className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <FileText className="w-5 h-5 text-red-500" />
+                <span className="font-semibold text-sm">Privacy Policy Framework .pdf</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
 }

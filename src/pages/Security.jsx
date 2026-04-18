@@ -5,7 +5,7 @@ import Badge from '../components/shared/Badge';
 import Modal from '../components/shared/Modal';
 import Toast from '../components/shared/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Mail, Key, Phone, User, CheckCircle, ShieldCheck, ShieldAlert, Monitor, LogOut, XCircle } from 'lucide-react';
+import { Lock, Mail, Key, Phone, User, CheckCircle, ShieldCheck, ShieldAlert, Monitor, LogOut, XCircle, Upload, FileText } from 'lucide-react';
 
 export default function Security() {
   const [authStep, setAuthStep] = useState('login'); // 'login' | '2fa' | 'dashboard'
@@ -17,7 +17,10 @@ export default function Security() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
-  const [signupData, setSignupData] = useState({ name: '', email: '', phone: '', password: '', confirm: '' });
+  const [signupData, setSignupData] = useState({ 
+    name: '', email: '', phone: '', password: '', confirm: '', 
+    userType: 'buyer', companyName: '', gstin: '', reraStatus: '', kycNumber: '' 
+  });
 
   // Password Strength
   const evaluatePassword = (pw) => {
@@ -196,7 +199,7 @@ export default function Security() {
           <motion.div 
             key="login"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -50 }}
-            className={`bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200 ${loginError ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}
+            className={`bg-white p-8 rounded-2xl shadow-xl w-full transition-all duration-300 ${activeTab === 'signup' ? 'max-w-lg' : 'max-w-md'} border border-slate-200 ${loginError ? 'animate-[shake_0.5s_ease-in-out]' : ''}`}
           >
             <div className="text-center mb-8">
                <div className="w-16 h-16 bg-navy-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -233,21 +236,75 @@ export default function Security() {
               </form>
             ) : (
               <form onSubmit={handleSignupSubmit} className="space-y-4">
-                <div className="relative">
-                  <User className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="text" placeholder="Full Name" required value={signupData.name} onChange={e => setSignupData({...signupData, name: e.target.value})} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 outline-none" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <User className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="text" placeholder="Full Name" required value={signupData.name} onChange={e => setSignupData({...signupData, name: e.target.value})} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
+                  </div>
+                  <div className="relative">
+                    <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="tel" placeholder="Phone Number" required value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="tel" placeholder="Phone Number" required value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 outline-none" />
-                </div>
+                
                 <div className="relative">
                   <Mail className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="email" placeholder="Email" required value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 outline-none" />
+                  <input type="email" placeholder="Email Address" required value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
                 </div>
-                <div className="relative">
-                  <Key className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="password" placeholder="Create Password" required value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 outline-none" />
+                
+                <div className="pt-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Account Role</label>
+                  <select required value={signupData.userType} onChange={e => setSignupData({...signupData, userType: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors text-slate-700 font-medium">
+                    <option value="buyer">Buyer / Tenant</option>
+                    <option value="owner">Property Owner</option>
+                    <option value="agent">Real Estate Agent</option>
+                    <option value="builder">Builder / Developer</option>
+                  </select>
+                </div>
+
+                {/* Conditional Fields Wrapper */}
+                <div className="space-y-4 pt-1 animate-in slide-in-from-top-2 fade-in duration-300">
+                  {signupData.userType === 'builder' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <input type="text" placeholder="Company Name" required value={signupData.companyName} onChange={e => setSignupData({...signupData, companyName: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
+                      </div>
+                      <div className="border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center p-3 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setToastMessage("GSTIN Document Uploaded!")}>
+                        <Upload className="w-5 h-5 text-slate-400 mr-2" />
+                        <span className="text-sm font-semibold text-slate-600">Upload GSTIN PDF</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {(signupData.userType === 'agent' || signupData.userType === 'builder') && (
+                    <div className="border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center p-3 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setToastMessage("RERA License Uploaded!")}>
+                      <FileText className="w-5 h-5 text-slate-400 mr-2" />
+                      <span className="text-sm font-semibold text-slate-600">Upload RERA License Document</span>
+                    </div>
+                  )}
+
+                  {(signupData.userType === 'buyer' || signupData.userType === 'owner' || signupData.userType === 'agent') && (
+                    <div className="border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center p-4 cursor-pointer hover:bg-slate-50 transition-colors group" onClick={() => setToastMessage("Aadhar/PAN Document Attached!")}>
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3 shadow-sm group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 text-gold-500" />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-sm font-bold text-navy-900 block">{signupData.userType === 'buyer' ? "Upload Aadhar/PAN (Optional)" : "Upload Aadhar/PAN Document"}</span>
+                        <span className="text-xs text-slate-500 block">Required for KYC verification. JPG/PDF (Max 5MB)</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="relative">
+                    <Key className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="password" placeholder="Create Password" required value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
+                  </div>
+                  <div className="relative">
+                    <Key className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input type="password" placeholder="Confirm Password" required value={signupData.confirm} onChange={e => setSignupData({...signupData, confirm: e.target.value})} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors" />
+                  </div>
                 </div>
                 
                 {/* Password Strength Meter */}
@@ -263,11 +320,7 @@ export default function Security() {
                   </div>
                 )}
 
-                <div className="relative">
-                  <Key className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="password" placeholder="Confirm Password" required value={signupData.confirm} onChange={e => setSignupData({...signupData, confirm: e.target.value})} className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 outline-none" />
-                </div>
-                <Button type="submit" variant="primary" className="w-full py-3">Create Account</Button>
+                <Button type="submit" variant="primary" className="w-full py-3 mt-4 shadow-md hover:shadow-lg">Create Secure Account</Button>
               </form>
             )}
           </motion.div>

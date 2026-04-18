@@ -5,11 +5,58 @@ import Modal from '../components/shared/Modal';
 import Button from '../components/shared/Button';
 import Badge from '../components/shared/Badge';
 import Toast from '../components/shared/Toast';
-import { Target, Users, Eye, TrendingUp, Handshake, Filter, Plus } from 'lucide-react';
+import { Target, Users, Eye, TrendingUp, Handshake, Filter, Plus, Send, Clock, CheckCircle } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function MarketingStrategy() {
   const [campaigns, setCampaigns] = useState(mockCampaigns);
+  
+  // --- Trigger Hub State ---
+  const [triggerLog, setTriggerLog] = useState([
+    { id: 'tr1', channel: 'Email', audience: 'Interest', message: 'Send Drip Campaign Invite', status: 'Delivered', time: '2 mins ago' },
+    { id: 'tr2', channel: 'Social Media', audience: 'Awareness', message: 'Retargeting Ad Image Swap', status: 'Delivered', time: '1 hour ago' },
+  ]);
+  const [triggerForm, setTriggerForm] = useState({ channel: 'Email', audience: 'Interest', message: '' });
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  const handleDispatchTrigger = (e) => {
+    e.preventDefault();
+    if (!triggerForm.message) return;
+    setIsTriggering(true);
+    
+    setTimeout(() => {
+      const newTrigger = {
+        id: `tr${Date.now()}`,
+        channel: triggerForm.channel,
+        audience: triggerForm.audience,
+        message: triggerForm.message,
+        status: 'Delivered',
+        time: 'Just now'
+      };
+      setTriggerLog([newTrigger, ...triggerLog]);
+      setIsTriggering(false);
+      setTriggerForm({ ...triggerForm, message: '' });
+      setToastMessage("Trigger Dispatched Successfully!");
+    }, 1500);
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   
@@ -248,6 +295,102 @@ export default function MarketingStrategy() {
                  <span className="text-slate-400">Estimated ROI</span>
                  <span className="text-xl font-bold text-emerald-400">{roiPercentage}%</span>
                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* Trigger Automation Hub */}
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-navy-900">Trigger Automation Hub</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {/* Dispatcher */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 className="text-lg font-bold text-navy-900 mb-4 flex items-center gap-2">
+              <Send className="w-5 h-5 text-gold-500" /> Dispatch Action
+            </h3>
+            <form onSubmit={handleDispatchTrigger} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Channel</label>
+                <select 
+                  className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                  value={triggerForm.channel} onChange={e => setTriggerForm({...triggerForm, channel: e.target.value})}
+                >
+                  <option value="Email">Email Platform</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="SMS">SMS / WhatsApp</option>
+                  <option value="Meta Ads">Meta Ads (FB/IG)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Target Segment</label>
+                <select 
+                  className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                  value={triggerForm.audience} onChange={e => setTriggerForm({...triggerForm, audience: e.target.value})}
+                >
+                  {funnelStages.map(s => <option key={s.title} value={s.title}>{s.title} Stage Users</option>)}
+                </select>
+                <div className="mt-2 text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 flex justify-between items-center">
+                  <span>Audience Size:</span>
+                  <span className="font-bold text-navy-900 px-2 py-0.5 bg-gold-100 text-gold-800 rounded">
+                    {funnelStages.find(s => s.title === triggerForm.audience)?.users?.toLocaleString() || 0} Users
+                  </span>
+                </div>
+              </div>
+              {triggerForm.channel === 'Meta Ads' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Daily Ad Budget (₹)</label>
+                  <input 
+                    type="number"
+                    required
+                    placeholder="e.g. 5000"
+                    className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Action Message / Ad Copy</label>
+                <textarea 
+                  rows="3"
+                  required
+                  placeholder="e.g. Follow-up discount offer..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 resize-none"
+                  value={triggerForm.message} onChange={e => setTriggerForm({...triggerForm, message: e.target.value})}
+                ></textarea>
+              </div>
+              <Button variant="primary" type="submit" className="w-full justify-center flex items-center gap-2" disabled={isTriggering}>
+                {isTriggering ? 'Dispatching...' : 'Fire Trigger'}
+                {!isTriggering && <Target className="w-4 h-4" />}
+              </Button>
+            </form>
+          </div>
+
+          {/* Trigger Log */}
+          <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+             <h3 className="text-lg font-bold text-navy-900 mb-4 flex items-center gap-2">
+               <Clock className="w-5 h-5 text-slate-500" /> Output Stream (Live)
+             </h3>
+             <div className="h-80 overflow-y-auto space-y-3 pr-2">
+               {triggerLog.map((log) => (
+                 <div key={log.id} className="flex items-start gap-4 p-4 border border-slate-100 rounded-xl bg-slate-50">
+                    <div className="p-2 bg-emerald-100 text-emerald-600 rounded-full mt-1">
+                      <CheckCircle className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="font-bold text-navy-900">{log.channel} Output</span>
+                        <span className="text-xs text-slate-500">{log.time}</span>
+                      </div>
+                      <p className="text-sm text-slate-700 mb-2">{log.message}</p>
+                      <div className="inline-block bg-white px-2 py-1 border border-slate-200 text-xs font-bold text-slate-600 rounded-md">
+                        Target: {log.audience}
+                      </div>
+                    </div>
+                 </div>
+               ))}
+               {triggerLog.length === 0 && (
+                 <div className="text-center text-slate-500 py-10">No triggers fired yet.</div>
+               )}
              </div>
           </div>
         </div>

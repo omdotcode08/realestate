@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Building2, Menu, X } from 'lucide-react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { Building2, Menu, X, User } from 'lucide-react';
 import Button from './shared/Button';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -15,9 +16,9 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Revenue Model', path: '/revenue' },
-    { name: 'Marketing', path: '/marketing' },
-    { name: 'CRM', path: '/crm' },
+    { name: 'Financials', path: '/revenue' },
+    { name: 'Growth', path: '/marketing' },
+    { name: 'Workspace', path: '/crm' },
     { name: 'Security', path: '/security' },
   ];
 
@@ -59,11 +60,11 @@ export default function Navbar() {
 
           {/* Action Buttons */}
           <div className="hidden lg:flex items-center gap-4">
-            <Button variant="ghost" className="text-slate-300 hover:text-white">
-              Login
-            </Button>
-            <Button variant="primary">
-              List Your Property
+            <button onClick={() => navigate('/login')} className="text-slate-200 hover:text-white border border-slate-600 hover:border-slate-400 hover:bg-slate-800 transition-all rounded-full px-5 py-2 font-medium flex items-center gap-2 shadow-sm text-sm">
+              <User className="w-4 h-4" /> Sign In
+            </button>
+            <Button variant="primary" onClick={() => navigate('/list')} className="rounded-full shadow-lg hover:shadow-xl transition-shadow px-6">
+              Post Property
             </Button>
           </div>
 
@@ -96,8 +97,8 @@ export default function Navbar() {
               </NavLink>
             ))}
             <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-800">
-              <Button variant="outline" className="w-full justify-center">Login</Button>
-              <Button variant="primary" className="w-full justify-center">List Your Property</Button>
+              <Button variant="outline" className="w-full justify-center" onClick={() => { navigate('/login'); setIsOpen(false); }}>Login</Button>
+              <Button variant="primary" className="w-full justify-center" onClick={() => { navigate('/list'); setIsOpen(false); }}>Post Property</Button>
             </div>
           </div>
         </div>

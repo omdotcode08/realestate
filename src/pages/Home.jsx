@@ -29,6 +29,11 @@ export default function Home() {
 
   // --- Detail Modal ---
   const [selectedProperty, setSelectedProperty] = useState(null);
+
+  // --- Visit Booking ---
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingForm, setBookingForm] = useState({ date: '', time: '10:00 AM', name: '', agent: 'Any Available Agent' });
+  const [crmVisits, setCrmVisits] = useLocalStorage('crm_visits', []);
   
   // --- EMI variables ---
   const [emiAmount, setEmiAmount] = useState(0);
@@ -108,6 +113,33 @@ export default function Home() {
     const tenure = 20 * 12; // 20 years
     const emi = (loanAmount * rate * Math.pow(1 + rate, tenure)) / (Math.pow(1 + rate, tenure) - 1);
     setEmiAmount(Math.round(emi));
+  };
+
+  const handleBookingSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedProperty || !bookingForm.date || !bookingForm.name) return;
+
+    // Save to CRM local state
+    const newVisit = {
+      buyer: bookingForm.name,
+      property: selectedProperty.title,
+      agent: bookingForm.agent,
+      dateStr: bookingForm.date,
+      time: bookingForm.time,
+      status: 'Pending'
+    };
+    setCrmVisits([...crmVisits, newVisit]);
+    
+    // Generate Google Calendar Link
+    const d = new Date(bookingForm.date);
+    const dateStr = d.toISOString().split('T')[0].replace(/-/g, '');
+    const gcalUrl = `https://calendar.google.com/calendar/r/eventedit?text=Property+Visit+-+${encodeURIComponent(selectedProperty.title)}&dates=${dateStr}T100000Z/${dateStr}T110000Z&details=${encodeURIComponent('Meeting for property ' + selectedProperty.title + ' with buyer ' + bookingForm.name)}&location=${encodeURIComponent(selectedProperty.location)}`;
+    
+    window.open(gcalUrl, '_blank');
+    
+    setToastMessage("Visit Scheduled! Added to Calendar.");
+    setIsBookingModalOpen(false);
+    setSelectedProperty(null);
   };
 
   const handleViewDetails = (property) => {
@@ -483,8 +515,7 @@ export default function Home() {
                     variant="primary" 
                     className="flex-1"
                     onClick={() => {
-                      setToastMessage("Visit booking form opened (dummy action)");
-                      setSelectedProperty(null);
+                      setIsBookingModalOpen(true);
                     }}
                   >
                     Schedule Visit
@@ -501,6 +532,69 @@ export default function Home() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Booking Form Modal */}
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={`Book Visit: ${selectedProperty?.title || ''}`}>
+        <form onSubmit={handleBookingSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Your Full Name</label>
+            <input 
+              type="text" 
+              required
+              placeholder="e.g. Rahul Sharma"
+              className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+              value={bookingForm.name}
+              onChange={(e) => setBookingForm({...bookingForm, name: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Preferred Date</label>
+              <input 
+                type="date" 
+                required
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                value={bookingForm.date}
+                onChange={(e) => setBookingForm({...bookingForm, date: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Preferred Time</label>
+              <select
+                className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                value={bookingForm.time}
+                onChange={(e) => setBookingForm({...bookingForm, time: e.target.value})}
+              >
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="12:00 PM">12:00 PM</option>
+                <option value="02:00 PM">02:00 PM</option>
+                <option value="04:00 PM">04:00 PM</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Assign Agent</label>
+            <select
+              className="w-full p-2.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+              value={bookingForm.agent}
+              onChange={(e) => setBookingForm({...bookingForm, agent: e.target.value})}
+            >
+              <option value="Any Available Agent">Any Available Agent</option>
+              <option value="Priya Sharma">Priya Sharma</option>
+              <option value="Rahul Verma">Rahul Verma</option>
+              <option value="Anita Desai">Anita Desai</option>
+            </select>
+          </div>
+          <div className="pt-4 flex gap-4">
+             <Button variant="ghost" type="button" onClick={() => setIsBookingModalOpen(false)} className="flex-1">
+               Cancel
+             </Button>
+             <Button variant="primary" type="submit" className="flex-1">
+               Confirm & Add to Calendar
+             </Button>
+          </div>
+        </form>
       </Modal>
 
     </div>
